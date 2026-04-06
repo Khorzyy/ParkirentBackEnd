@@ -1,204 +1,181 @@
 # 🚗 Parkirent Backend
 
-Backend service untuk aplikasi **Parkirent** — sistem manajemen parkir berbasis IoT (RFID) yang menangani proses kendaraan masuk, keluar, pembayaran, serta manajemen user dan tarif.
+Backend service for **Parkirent** — an IoT-based smart parking system using RFID technology to handle vehicle entry, exit, pricing, and role-based user management.
 
 ---
 
 ## 📌 Overview
 
-Parkirent Backend bertugas sebagai:
+Parkirent Backend is responsible for:
 
-* API utama untuk aplikasi (admin & sistem parkir)
-* Penghubung antara IoT (RFID / gate system) dengan database
-* Pengelola data parkir (masuk, keluar, tarif, user)
+* Providing RESTful APIs for admin, owner, and staff
+* Handling IoT communication (RFID & gate system via MQTT)
+* Managing parking transactions and pricing logic
+* Implementing role-based access control (RBAC)
 
 ---
 
 ## 🧱 Tech Stack
 
-* **Node.js** – Runtime utama
-* **Express.js** – Framework API
-* **Supabase** – Database & Auth
-* **MQTT / IoT** – Komunikasi device parkir
-* **REST API** – Komunikasi frontend & device
+* **Node.js** – Runtime environment
+* **Express.js** – Backend framework
+* **Supabase** – Database & authentication
+* **MQTT** – IoT communication (RFID & gate control)
+* **REST API** – Client-server communication
 
 ---
 
-## ⚙️ Features
+## 🏗️ Architecture
 
-### 👤 Authentication
+This project follows a **layered architecture**:
 
-* Login user / admin
-* Token-based authentication
-* Role:
-
-  * Admin
-  * Petugas (opsional)
-  * Owner
-
----
-
-### 🚗 Manajemen Parkir
-
-* Kendaraan masuk (tap RFID)
-* Kendaraan keluar
-* Hitung durasi parkir
-* Hitung tarif otomatis
-
----
-
-### 💰 Manajemen Tarif
-
-* CRUD tarif parkir
-* Tarif berdasarkan:
-
-  * Jenis kendaraan
-  * Durasi parkir
-
----
-
-### 👥 Manajemen User
-
-* Tambah user (oleh admin)
-* Update user
-* Role management
-
----
-
-### 📡 Integrasi IoT
-
-* Terima data dari RFID
-* Trigger gate (servo)
-* Sinkronisasi data parkir real-time
+* **Routes** → Define API endpoints
+* **Controllers** → Handle request & response
+* **Services** → Business logic
+* **Middleware** → Authentication & authorization
+* **Config** → External services (Supabase, MQTT)
+* **Utils** → Helper functions
 
 ---
 
 ## 📂 Project Structure
 
-```
+```id="p9g3k2"
 src/
 │
 ├── config/
-│   └── supabase.js        # konfigurasi database
+│   ├── mqtt.js            # MQTT configuration
+│   └── supabase.js        # Supabase client setup
 │
 ├── controllers/
-│   ├── authController.js
-│   ├── parkirController.js
-│   ├── userController.js
-│   └── tarifController.js
+│   ├── admin.controller.js
+│   ├── auth.controller.js
+│   ├── iot.controller.js
+│   ├── owner.controller.js
+│   └── petugas.controller.js
 │
 ├── routes/
-│   ├── authRoutes.js
-│   ├── parkirRoutes.js
-│   ├── userRoutes.js
-│   └── tarifRoutes.js
+│   ├── admin.routes.js
+│   ├── auth.routes.js
+│   ├── iot.routes.js
+│   ├── owner.routes.js
+│   └── petugas.routes.js
+│
+├── services/
+│   ├── admin.service.js
+│   ├── auth.service.js
+│   ├── iot.service.js
+│   ├── mqtt.service.js
+│   ├── owner.service.js
+│   └── petugas.service.js
 │
 ├── middleware/
-│   └── authMiddleware.js
+│   ├── auth.middleware.js
+│   └── role.middleware.js
 │
 ├── utils/
-│   └── helpers.js
+│   ├── bcrypt.js
+│   ├── session.js
+│   └── time.js
 │
-└── app.js
+├── app.js                 # Express app setup
+└── server.js              # Server entry point
 ```
 
 ---
 
-## 🔄 Alur Sistem
+## 🔐 Role-Based Access
 
-### 🚗 Kendaraan Masuk
+The system supports multiple roles:
 
-1. RFID dibaca oleh device
-2. Data dikirim ke backend (MQTT / HTTP)
+* **Admin**
+
+  * Manage users
+  * Manage parking rates
+
+* **Owner**
+
+  * Monitor parking activity
+  * View reports
+
+* **Petugas (Staff)**
+
+  * Handle parking operations (entry & exit)
+
+---
+
+## 🔄 System Flow
+
+### 🚗 Vehicle Entry
+
+1. RFID card is scanned
+2. IoT device sends data via MQTT / HTTP
 3. Backend:
 
-   * Validasi user
-   * Simpan data parkir (waktu masuk)
-4. Gate terbuka
+   * Validates RFID
+   * Creates parking record (check-in)
+4. Gate opens automatically
 
 ---
 
-### 🚗 Kendaraan Keluar
+### 🚗 Vehicle Exit
 
-1. RFID dibaca kembali
+1. RFID scanned again
 2. Backend:
 
-   * Ambil data parkir aktif
-   * Hitung durasi
-   * Hitung tarif
-3. Data disimpan sebagai transaksi selesai
-4. Gate terbuka
+   * Finds active parking session
+   * Calculates duration
+   * Calculates total price
+3. Saves transaction
+4. Gate opens
 
 ---
 
-### 👨‍💻 Admin Flow
+### 📡 IoT Communication Flow
 
-1. Login ke dashboard
-2. Kelola:
+* MQTT handles:
 
-   * User
-   * Tarif
-3. Monitoring data parkir
-
----
-
-## 🔌 API Endpoints (Contoh)
-
-### Auth
-
-```
-POST /api/auth/login
-```
-
-### Parkir
-
-```
-POST /api/parkir/masuk
-POST /api/parkir/keluar
-GET  /api/parkir
-```
-
-### User
-
-```
-POST /api/users
-PUT  /api/users/:id
-GET  /api/users
-```
-
-### Tarif
-
-```
-POST /api/tarif
-PUT  /api/tarif/:id
-GET  /api/tarif
-```
+  * RFID scan events
+  * Gate control (servo)
+* `mqtt.service.js` manages broker connection
+* `iot.controller.js` processes incoming device data
 
 ---
 
-## 🗄️ Database Design (Simplified)
+## 🔌 API Modules
 
-### users
+### 🔑 Auth Routes
 
-* id
-* name
-* role
-* rfid
+* Login
+* Session handling
 
-### parkir
+### 👤 Admin Routes
 
-* id
-* user_id
-* waktu_masuk
-* waktu_keluar
-* durasi
-* tarif
+* Manage users
+* Manage pricing
 
-### tarif
+### 🧑‍💼 Owner Routes
 
-* id
-* jenis_kendaraan
-* harga_per_jam
+* Monitoring & reporting
+
+### 👷 Petugas Routes
+
+* Parking operations
+
+### 📡 IoT Routes
+
+* RFID input
+* Device communication
+
+---
+
+## 🗄️ Core Functionalities
+
+* RFID-based parking system
+* Real-time parking session tracking
+* Automatic pricing calculation
+* Secure authentication & authorization
+* MQTT-based IoT integration
 
 ---
 
@@ -206,73 +183,65 @@ GET  /api/tarif
 
 ### 1. Clone Repository
 
-```bash
+```bash id="9u4o0n"
 git clone https://github.com/Khorzyy/ParkirentBackEnd
 cd ParkirentBackEnd
 ```
 
 ### 2. Install Dependencies
 
-```bash
+```bash id="0q7p91"
 npm install
 ```
 
 ### 3. Setup Environment
 
-Buat file `.env`:
+Create `.env` file:
 
-```
+```id="d1y2cz"
 SUPABASE_URL=your_url
 SUPABASE_KEY=your_key
 PORT=3000
+MQTT_BROKER=your_mqtt_url
 ```
+
+---
 
 ### 4. Run Server
 
-```bash
+```bash id="5xq1d2"
 npm run dev
 ```
 
 ---
 
-## 📡 IoT Integration (Opsional)
-
-Backend dapat menerima data dari:
-
-* ESP32 / Arduino
-* RFID Reader
-
-Metode:
-
-* HTTP Request
-* MQTT Broker
-
----
-
 ## 🧪 Testing
 
-Gunakan:
+You can test the API using:
 
-* Postman / Thunder Client
-* Simulasi RFID via API
+* Postman
+* Thunder Client
+* Simulated IoT requests (RFID input)
 
 ---
 
 ## 📈 Future Improvements
 
-* Payment Gateway
-* Real-time dashboard
+* Payment gateway integration
+* Real-time dashboard (WebSocket)
 * Notification system
-* Multi parking location
+* Multi-location parking system
 
 ---
 
 ## 👨‍💻 Author
 
-* **Khor Zyy**
+* **Khorzyy**
 
 ---
 
 ## 📜 License
 
-MIT License
+This project currently does **not include a license**.
+
+If you want to make it open-source, you can add an MIT License.
