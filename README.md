@@ -34,6 +34,7 @@ Parkirent Backend bertugas sebagai:
 
   * Admin
   * Petugas (opsional)
+  * Owner
 
 ---
 
